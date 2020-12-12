@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Covid-19 Testing",
+  "name": "Mock CityMD Covid-19 Testing",
   "icons": [
     {
       "src": "favicon.ico",
