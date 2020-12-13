@@ -18,13 +18,15 @@ const User = new Schema({
   travel: [
     {
       location: String,
-      date: Date,
+      date: String,
     },
   ],
   appointments: [
     {
+      date: String,
+      time: String,
       location: String,
-      date: Date,
+      type: String,
     },
   ],
 });
