@@ -10,12 +10,7 @@ const Location = new Schema({
     state: String,
     zip: Number,
   },
-  available: [
-    {
-      date: String,
-      times: [String],
-    },
-  ],
+  available: {},
   appointments: [
     {
       date: String,

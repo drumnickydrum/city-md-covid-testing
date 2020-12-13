@@ -15,20 +15,8 @@ const User = new Schema({
     state: String,
     zip: Number,
   },
-  travel: [
-    {
-      location: String,
-      date: String,
-    },
-  ],
-  appointments: [
-    {
-      date: String,
-      time: String,
-      location: String,
-      type: String,
-    },
-  ],
+  travel: [],
+  appointments: [],
 });
 
 module.exports = mongoose.model('user', User);

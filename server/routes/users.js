@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User.model.js');
 const Location = require('../models/Location.model.js');
+const { update } = require('../models/User.model.js');
 
 // add user to db with email and password
 router.route('/register').post((req, res) => {
@@ -37,24 +38,35 @@ router.route('/login').post((req, res) => {
 });
 
 // add an appointment
-router.route('/appts').post((req, res) => {
+router.route('/appts').post(async (req, res) => {
   const { _id, date, time, location, type } = req.body;
   const newAppointment = { date, time, location, type };
-  Location.findById(location)
-    .then((location) => {
-      const available = location.available;
-      //  change the data structure so
-      //  dates are keys of the appointments object
-    })
-    .catch((err) => res.status(400).json(err));
-  User.findById(_id)
-    .then((user) => {
-      const appointments = user.appointments;
-      appointments.unshift(newAppointment);
-      User.save()
-        .then((user) => res.json(user))
-        .catch((err) => res.status(400).json(err));
-    })
+  const updateLocation = await Location.findById(location, {}, (err) => {
+    if (err) {
+      console.log(err);
+      return res.send('location not found');
+    }
+  });
+  if (!updateLocation.available[date][time]) {
+    return res.send('unavailable');
+  } else {
+    updateLocation.available[date][time] = false;
+    updateLocation.markModified('available');
+    updateLocation.save().catch((err) => {
+      console.log(err);
+      return res.status(400).send('location not updated');
+    });
+  }
+  const user = await User.findById(_id, {}, (err) => {
+    if (err) {
+      console.log(err);
+      return res.status(400).send('user not found');
+    }
+  });
+  user.appointments.unshift(newAppointment);
+  user
+    .save()
+    .then((user) => res.json(user))
     .catch((err) => res.status(400).json(err));
 });
 

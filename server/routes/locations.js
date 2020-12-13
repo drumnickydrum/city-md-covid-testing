@@ -21,6 +21,7 @@ router.route('/').post((req, res) => {
 // update available appointments
 router.route('/avail').post((req, res) => {
   const { _id, available } = req.body;
+  console.log(available);
   Location.findByIdAndUpdate(_id, { available })
     .then(() => res.send('all good!'))
     .catch((err) => res.status(400).json(err));
