@@ -116,7 +116,8 @@ router.route('/appointments').delete(async (req, res) => {
       });
       let userAppts = [...dbUser.appointments];
       for (let [index, appt] of userAppts.entries()) {
-        if (appt._id.toString() === confirmation) userAppts.splice(index, 1);
+        if (appt.confirmation.toString() === confirmation)
+          userAppts.splice(index, 1);
       }
       dbUser.appointments = [...userAppts];
       dbUser
