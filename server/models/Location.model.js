@@ -19,7 +19,7 @@ const Location = new Schema({
       user: String,
     },
   ],
-  types: [String],
+  tests: [String],
 });
 
 module.exports = mongoose.model('location', Location);

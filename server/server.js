@@ -18,11 +18,11 @@ mongoose.connect(
   }
 );
 
-const usersRouter = require('./routes/users.js');
-const locationsRouter = require('./routes/locations.js');
+const clientRouter = require('./routes/client.js');
+const providerRouter = require('./routes/provider.js');
 
-app.use('/users', usersRouter);
-app.use('/locations', locationsRouter);
+app.use('/client', clientRouter);
+app.use('/provider', providerRouter);
 
 app.listen(port, () => {
   console.log('Server is running on port: ', port);
