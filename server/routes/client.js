@@ -49,93 +49,67 @@ router.route('/login').post((req, res) => {
 router.route('/appointments').post(async (req, res) => {
   const { client, date, time, location, test } = req.body;
   const dbLocation = await Location.findById(location, {}, (err) => {
-    if (err) {
-      console.log(err);
-      return res.send('location not found');
-    }
+    if (err) return res.send('location not found');
   });
-  let appts = [...dbLocation.appointments];
-  for (let appt of appts) {
+  for (let appt of dbLocation.appointments) {
     if (appt.date === date && appt.time === time) {
       return res.send('unavailable');
     }
   }
   const _id = new ObjectId();
-  appts.push({ date, time, test, client, _id });
-  dbLocation.appointments = [...appts];
+  dbLocation.appointments.unshift({ date, time, test, client, _id });
   dbLocation
     .save()
     .then(async () => {
       const newAppointment = { date, time, location, test, confirmation: _id };
       let dbClient = await Client.findById(client, {}, (err) => {
-        if (err) {
-          console.log(err);
-          return res.status(400).send('client not found');
-        }
+        if (err) return res.status(400).send('client not found');
       });
-      let clientAppts = [...dbClient.appointments];
-      clientAppts.push(newAppointment);
-      dbClient.appointments = [...clientAppts];
-      console.log(dbClient);
+      dbClient.appointments.unshift(newAppointment);
       dbClient
         .save()
         .then((client) => res.json(client))
-        .catch((err) => res.status(400).json(err));
+        .catch((err) => res.status(400).send(err));
     })
-    .catch((err) => {
-      console.log(err);
-      return res.status(400).send('location not updated');
-    });
+    .catch((err) => res.status(400).send(err));
 });
 
 router.route('/appointments').get(async (req, res) => {
   const client = req.body.client;
   const clientDoc = await Client.findById(client, {}, (err) => {
-    if (err) {
-      console.log(err);
-      return res.status(400).send('client not found');
-    }
+    if (err) return res.status(400).send('client not found');
   });
   return res.json(clientDoc.appointments);
 });
 
 router.route('/appointments').delete(async (req, res) => {
   const { client, location, confirmation } = req.body;
+  if (!client || !location || !confirmation)
+    return res.status(400).send('required fields missing');
   const dbLocation = await Location.findById(location, {}, (err) => {
-    if (err) {
-      console.log(err);
-      return res.send('location not found');
-    }
+    if (err) return res.status(400).send('location not found');
   });
-  let appts = [...dbLocation.appointments];
-  for (let [index, appt] of appts.entries()) {
-    if (appt._id.toString() === confirmation) appts.splice(index, 1);
+  for (let [index, appt] of Object.entries(dbLocation.appointments)) {
+    if (appt._id.toString() === confirmation)
+      dbLocation.appointments.splice(index, 1);
   }
-  dbLocation.appointments = [...appts];
   dbLocation
     .save()
     .then(async () => {
       let dbClient = await Client.findById(client, {}, (err) => {
-        if (err) {
-          console.log(err);
-          return res.status(400).send('client not found');
-        }
+        if (err) return res.status(400).send('client not found');
       });
-      let clientAppts = [...dbClient.appointments];
-      for (let [index, appt] of clientAppts.entries()) {
+      console.log(dbClient);
+      for (let [index, appt] of Object.entries(dbClient.appointments)) {
         if (appt.confirmation.toString() === confirmation)
-          clientAppts.splice(index, 1);
+          dbClient.appointments.splice(index, 1);
       }
-      dbClient.appointments = [...clientAppts];
       dbClient
         .save()
         .then((client) => res.json(client))
-        .catch((err) => res.status(400).json(err));
+        .catch((err) => res.status(400).send('didnt save'));
     })
-    .catch((err) => {
-      console.log(err);
-      return res.status(400).send('location not updated');
-    });
+    .catch((err) => res.status(400).send(err));
 });
 
 router.route('/update/:type').post(async (req, res) => {

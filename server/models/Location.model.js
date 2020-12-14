@@ -16,7 +16,7 @@ const Location = new Schema({
       date: String,
       time: String,
       test: String,
-      user: String,
+      client: String,
     },
   ],
   tests: [String],

@@ -1,8 +1,16 @@
 const express = require('express');
 const router = express.Router();
+const { ObjectId } = require('mongodb');
 const createTruthyObject = require('../tools/createTruthyObject');
 const Location = require('../models/Location.model.js');
 const Provider = require('../models/Provider.model.js');
+
+// return all locations
+router.route('/locations').get((req, res) => {
+  Location.find()
+    .then((locations) => res.json(locations))
+    .catch((err) => res.status(400).json(err));
+});
 
 router.route('/login').post((req, res) => {
   const { username, password } = req.body;
@@ -59,5 +67,7 @@ router.route('/locations/update/:type').post(async (req, res) => {
     .then((location) => res.json(location))
     .catch((err) => res.status(400).json(err));
 });
+
+router.route('/appointments/add').post(async (req, res) => {});
 
 module.exports = router;
