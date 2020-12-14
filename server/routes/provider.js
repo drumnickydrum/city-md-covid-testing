@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
+const createTruthyObject = require('../tools/createTruthyObject');
 const Location = require('../models/Location.model.js');
 const Provider = require('../models/Provider.model.js');
-const createTruthyObject = require('../tools/createTruthyObject');
 
 router.route('/login').post((req, res) => {
   const { username, password } = req.body;
@@ -48,10 +48,11 @@ router.route('/locations/update/:type').post(async (req, res) => {
     case 'address':
       dbLocation.address = Object.assign({}, dbLocation.address, request);
       break;
-
     case 'tests':
       dbLocation.tests = Object.assign([], request.tests);
       break;
+    default:
+      return res.status(400).send('invalid update');
   }
   dbLocation
     .save()

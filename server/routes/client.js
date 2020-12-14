@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { ObjectId } = require('mongodb');
+const createTruthyObject = require('../tools/createTruthyObject.js');
 const Client = require('../models/Client.model.js');
 const Location = require('../models/Location.model.js');
 
@@ -137,93 +138,44 @@ router.route('/appointments').delete(async (req, res) => {
     });
 });
 
-router.route('/update/basic').post((req, res) => {
-  const { client, name, email, phone, dob } = req.body;
-  if (!client) res.send('must provide client id');
-  const createUpdateObj = () => ({
-    ...(name && { name }),
-    ...(email && { email }),
-    ...(phone && { phone }),
-    ...(dob && { dob }),
+router.route('/update/:type').post(async (req, res) => {
+  const type = req.params.type;
+  let request = createTruthyObject(req.body);
+  if (!request.client) return res.send('must provide client id');
+  delete request.client;
+  let dbClient = await Client.findById(req.body.client, (err) => {
+    if (err) return res.status(400).send('location not found');
   });
-  Client.findByIdAndUpdate(client, createUpdateObj(), { new: true })
-    .then((client) => res.json(client))
-    .catch((err) => res.status(400).json(err));
-});
-
-router.route('/update/address').post((req, res) => {
-  const { client, street, city, state, zip } = req.body;
-  if (!client) res.send('must provide client id');
-  const createUpdateObj = () => ({
-    ...(street && { street }),
-    ...(city && { city }),
-    ...(state && { state }),
-    ...(zip && { zip }),
-  });
-  const address = createUpdateObj();
-  Client.findByIdAndUpdate(
-    client,
-    { $set: { address: address } },
-    { new: true }
-  )
-    .then((client) => res.json(client))
-    .catch((err) => res.status(400).json(err));
-});
-
-router.route('/update/password').post((req, res) => {
-  const { client, password } = req.body;
-  if (!client) res.send('must provide client id');
-  if (!password) res.send('must provide new password');
-  Client.findByIdAndUpdate(client, { password }, { new: true })
-    .then((client) => res.json(client))
-    .catch((err) => res.status(400).json(err));
-});
-
-router.route('/update/insurance').post((req, res) => {
-  const { client, ins_provider, ins_id } = req.body;
-  if (!client) res.send('must provide client id');
-  const createUpdateObj = () => ({
-    ...(ins_provider && { ins_provider }),
-    ...(ins_id && { ins_id }),
-  });
-  Client.findByIdAndUpdate(client, createUpdateObj(), { new: true })
-    .then((client) => res.json(client))
-    .catch((err) => res.status(400).json(err));
-});
-
-router.route('/update/econtact').post((req, res) => {
-  const { client, name, phone, relation } = req.body;
-  if (!client) res.send('must provide client id');
-  const createUpdateObj = () => ({
-    ...(name && { name }),
-    ...(phone && { phone }),
-    ...(relation && { relation }),
-  });
-  const econtact = createUpdateObj();
-  Client.findByIdAndUpdate(
-    client,
-    { $set: { emergency_contact: econtact } },
-    { new: true }
-  )
-    .then((client) => res.json(client))
-    .catch((err) => res.status(400).json(err));
-});
-
-router.route('/update/travel').post((req, res) => {
-  const { client, location, date } = req.body;
-  if (!client) res.send('must provide client id');
-  const createUpdateObj = () => ({
-    ...(location && { location }),
-    ...(date && { date }),
-  });
-  const travel = createUpdateObj();
-  Client.findByIdAndUpdate(client, { $push: { travel: travel } }, { new: true })
+  switch (type) {
+    case 'insurance':
+    case 'basic':
+      for (let [key, val] of Object.entries(request)) {
+        if (val) dbClient[key] = val;
+      }
+      break;
+    case 'emergency_contact':
+    case 'address':
+      dbClient[type] = Object.assign({}, dbClient[type], request);
+      break;
+    case 'password':
+      // obviously a lot more than this;
+      dbClient.password = request.password;
+      break;
+    case 'travel':
+      dbClient.travel = [request, ...dbClient.travel];
+      break;
+    default:
+      return res.status(400).send('invalid update');
+  }
+  dbClient
+    .save()
     .then((client) => res.json(client))
     .catch((err) => res.status(400).json(err));
 });
 
 router.route('/').get((req, res) => {
   let client = req.body.client;
+  console.log(client);
   Client.findById(client, {}, (err) => {
     if (err) {
       console.log(err);
