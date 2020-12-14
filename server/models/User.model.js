@@ -5,7 +5,7 @@ const User = new Schema({
   email: String,
   password: String,
   name: String,
-  dob: Date,
+  dob: String,
   ins_provider: String,
   ins_id: String,
   phone: String,
@@ -14,6 +14,11 @@ const User = new Schema({
     city: String,
     state: String,
     zip: Number,
+  },
+  emergency_contact: {
+    name: String,
+    phone: String,
+    relation: String,
   },
   travel: [],
   appointments: [

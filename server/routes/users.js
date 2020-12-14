@@ -1,9 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const mongoose = require('express');
 const { ObjectId } = require('mongodb');
 const User = require('../models/User.model.js');
 const Location = require('../models/Location.model.js');
+
+// return all locations
+router.route('/locations').get((req, res) => {
+  Location.find()
+    .then((locations) => res.json(locations))
+    .catch((err) => res.status(400).json(err));
+});
 
 // add user to db with email and password
 router.route('/register').post((req, res) => {
@@ -131,12 +137,100 @@ router.route('/appointments').delete(async (req, res) => {
     });
 });
 
-router.route('/profile').get((req, res) => {
-  // get user profile
+router.route('/update/basic').post((req, res) => {
+  const { user, name, email, phone, dob } = req.body;
+  if (!user) res.send('must provide user id');
+  // conditionally create object properties
+  const createUpdateObj = () => ({
+    ...(name && { name }),
+    ...(email && { email }),
+    ...(phone && { phone }),
+    ...(dob && { dob }),
+  });
+  User.findByIdAndUpdate(user, createUpdateObj(), { new: true })
+    .then((user) => res.json(user))
+    .catch((err) => res.status(400).json(err));
 });
 
-router.route('/profile').post((req, res) => {
-  // update user profile
+router.route('/update/address').post((req, res) => {
+  const { user, street, city, state, zip } = req.body;
+  // conditionally create object properties
+  if (!user) res.send('must provide user id');
+  const createUpdateObj = () => ({
+    ...(street && { street }),
+    ...(city && { city }),
+    ...(state && { state }),
+    ...(zip && { zip }),
+  });
+  const address = createUpdateObj();
+  User.findByIdAndUpdate(user, { $set: { address: address } }, { new: true })
+    .then((user) => res.json(user))
+    .catch((err) => res.status(400).json(err));
+});
+
+router.route('/update/password').post((req, res) => {
+  const { user, password } = req.body;
+  if (!user) res.send('must provide user id');
+  if (!password) res.send('must provide new password');
+  User.findByIdAndUpdate(user, { password }, { new: true })
+    .then((user) => res.json(user))
+    .catch((err) => res.status(400).json(err));
+});
+
+router.route('/update/insurance').post((req, res) => {
+  const { user, ins_provider, ins_id } = req.body;
+  if (!user) res.send('must provide user id');
+  // conditionally create object properties
+  const createUpdateObj = () => ({
+    ...(ins_provider && { ins_provider }),
+    ...(ins_id && { ins_id }),
+  });
+  User.findByIdAndUpdate(user, createUpdateObj(), { new: true })
+    .then((user) => res.json(user))
+    .catch((err) => res.status(400).json(err));
+});
+
+router.route('/update/econtact').post((req, res) => {
+  const { user, name, phone, relation } = req.body;
+  // conditionally create object properties
+  if (!user) res.send('must provide user id');
+  const createUpdateObj = () => ({
+    ...(name && { name }),
+    ...(phone && { phone }),
+    ...(relation && { relation }),
+  });
+  const econtact = createUpdateObj();
+  User.findByIdAndUpdate(
+    user,
+    { $set: { emergency_contact: econtact } },
+    { new: true }
+  )
+    .then((user) => res.json(user))
+    .catch((err) => res.status(400).json(err));
+});
+
+router.route('/update/travel').post((req, res) => {
+  const { user, location, date } = req.body;
+  // conditionally create object properties
+  if (!user) res.send('must provide user id');
+  const createUpdateObj = () => ({
+    ...(location && { location }),
+    ...(date && { date }),
+  });
+  const travel = createUpdateObj();
+  User.findByIdAndUpdate(user, { $push: { travel: travel } }, { new: true })
+    .then((user) => res.json(user))
+    .catch((err) => res.status(400).json(err));
+});
+
+router.route('/').get((req, res) => {
+  let user = req.body.user;
+  User.findById(user, {}, (err) => {
+    if (err) {
+      console.log(err);
+      return res.status(400).send('user not found');
+    }
+  }).then((user) => res.json(user));
 });
 
 module.exports = router;
