@@ -10,14 +10,16 @@ const Location = new Schema({
     state: String,
     zip: Number,
   },
-  available: {},
   appointments: [
     {
+      _id: Schema.Types.ObjectId,
       date: String,
-      type: String,
-      id: String,
+      time: String,
+      test: String,
+      user: String,
     },
   ],
+  types: [String],
 });
 
 module.exports = mongoose.model('location', Location);

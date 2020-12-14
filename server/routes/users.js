@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('express');
+const { ObjectId } = require('mongodb');
 const User = require('../models/User.model.js');
 const Location = require('../models/Location.model.js');
-const { update } = require('../models/User.model.js');
 
 // add user to db with email and password
 router.route('/register').post((req, res) => {
@@ -38,44 +39,95 @@ router.route('/login').post((req, res) => {
 });
 
 // add an appointment
-router.route('/appts').post(async (req, res) => {
-  const { _id, date, time, location, type } = req.body;
-  const newAppointment = { date, time, location, type };
-  const updateLocation = await Location.findById(location, {}, (err) => {
+router.route('/appointments').post(async (req, res) => {
+  const { user, date, time, location, test } = req.body;
+  const dbLocation = await Location.findById(location, {}, (err) => {
     if (err) {
       console.log(err);
       return res.send('location not found');
     }
   });
-  if (!updateLocation.available[date][time]) {
-    return res.send('unavailable');
-  } else {
-    updateLocation.available[date][time] = false;
-    updateLocation.markModified('available');
-    updateLocation.save().catch((err) => {
+  let appts = [...dbLocation.appointments];
+  for (let appt of appts) {
+    if (appt.date === date && appt.time === time) {
+      return res.send('unavailable');
+    }
+  }
+  const _id = new ObjectId();
+  appts.push({ date, time, test, user, _id });
+  dbLocation.appointments = [...appts];
+  dbLocation
+    .save()
+    .then(async () => {
+      const newAppointment = { date, time, location, test, confirmation: _id };
+      let dbUser = await User.findById(user, {}, (err) => {
+        if (err) {
+          console.log(err);
+          return res.status(400).send('user not found');
+        }
+      });
+      let userAppts = [...dbUser.appointments];
+      userAppts.push(newAppointment);
+      dbUser.appointments = [...userAppts];
+      console.log(dbUser);
+      dbUser
+        .save()
+        .then((user) => res.json(user))
+        .catch((err) => res.status(400).json(err));
+    })
+    .catch((err) => {
       console.log(err);
       return res.status(400).send('location not updated');
     });
-  }
-  const user = await User.findById(_id, {}, (err) => {
+});
+
+router.route('/appointments').get(async (req, res) => {
+  const user = req.body.user;
+  const userDoc = await User.findById(user, {}, (err) => {
     if (err) {
       console.log(err);
       return res.status(400).send('user not found');
     }
   });
-  user.appointments.unshift(newAppointment);
-  user
+  return res.json(userDoc.appointments);
+});
+
+router.route('/appointments').delete(async (req, res) => {
+  const { user, location, confirmation } = req.body;
+  const dbLocation = await Location.findById(location, {}, (err) => {
+    if (err) {
+      console.log(err);
+      return res.send('location not found');
+    }
+  });
+  let appts = [...dbLocation.appointments];
+  for (let [index, appt] of appts.entries()) {
+    if (appt._id.toString() === confirmation) appts.splice(index, 1);
+  }
+  dbLocation.appointments = [...appts];
+  dbLocation
     .save()
-    .then((user) => res.json(user))
-    .catch((err) => res.status(400).json(err));
-});
-
-router.route('/appts').get((req, res) => {
-  // get all appointments
-});
-
-router.route('/appts').delete((req, res) => {
-  // delete selected appointment
+    .then(async () => {
+      let dbUser = await User.findById(user, {}, (err) => {
+        if (err) {
+          console.log(err);
+          return res.status(400).send('user not found');
+        }
+      });
+      let userAppts = [...dbUser.appointments];
+      for (let [index, appt] of userAppts.entries()) {
+        if (appt._id.toString() === confirmation) userAppts.splice(index, 1);
+      }
+      dbUser.appointments = [...userAppts];
+      dbUser
+        .save()
+        .then((user) => res.json(user))
+        .catch((err) => res.status(400).json(err));
+    })
+    .catch((err) => {
+      console.log(err);
+      return res.status(400).send('location not updated');
+    });
 });
 
 router.route('/profile').get((req, res) => {

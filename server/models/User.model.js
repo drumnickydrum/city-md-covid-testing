@@ -16,7 +16,15 @@ const User = new Schema({
     zip: Number,
   },
   travel: [],
-  appointments: [],
+  appointments: [
+    {
+      date: String,
+      time: String,
+      location: String,
+      test: String,
+      confirmation: String,
+    },
+  ],
 });
 
 module.exports = mongoose.model('user', User);
