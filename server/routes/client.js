@@ -47,7 +47,7 @@ router.route('/login').post((req, res) => {
 
 // add an appointment
 router.route('/appointments').post(async (req, res) => {
-  const { client, date, time, location, test } = req.body;
+  const { client, name, dob, phone, date, time, location, test } = req.body;
   const dbLocation = await Location.findById(location, {}, (err) => {
     if (err) return res.send('location not found');
   });
@@ -57,11 +57,29 @@ router.route('/appointments').post(async (req, res) => {
     }
   }
   const _id = new ObjectId();
-  dbLocation.appointments.unshift({ date, time, test, client, _id });
+  dbLocation.appointments.unshift({
+    date,
+    time,
+    test,
+    client,
+    name,
+    dob,
+    phone,
+    _id,
+  });
   dbLocation
     .save()
     .then(async () => {
-      const newAppointment = { date, time, location, test, confirmation: _id };
+      const newAppointment = {
+        date,
+        time,
+        location,
+        name: dbLocation.name,
+        address: dbLocation.address,
+        phone: dbLocation.phone,
+        test,
+        confirmation: _id,
+      };
       let dbClient = await Client.findById(client, {}, (err) => {
         if (err) return res.status(400).send('client not found');
       });
@@ -99,7 +117,6 @@ router.route('/appointments').delete(async (req, res) => {
       let dbClient = await Client.findById(client, {}, (err) => {
         if (err) return res.status(400).send('client not found');
       });
-      console.log(dbClient);
       for (let [index, appt] of Object.entries(dbClient.appointments)) {
         if (appt.confirmation.toString() === confirmation)
           dbClient.appointments.splice(index, 1);
